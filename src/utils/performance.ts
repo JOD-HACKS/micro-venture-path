@@ -27,9 +27,9 @@ class PerformanceMonitor {
             if (entry.entryType === 'navigation') {
               const navEntry = entry as PerformanceNavigationTiming;
               
-              this.recordMetric('page_load_time', navEntry.loadEventEnd - navEntry.navigationStart, 'ms');
-              this.recordMetric('dom_content_loaded', navEntry.domContentLoadedEventEnd - navEntry.navigationStart, 'ms');
-              this.recordMetric('first_paint', navEntry.responseStart - navEntry.navigationStart, 'ms');
+              this.recordMetric('page_load_time', navEntry.loadEventEnd - navEntry.fetchStart, 'ms');
+              this.recordMetric('dom_content_loaded', navEntry.domContentLoadedEventEnd - navEntry.fetchStart, 'ms');
+              this.recordMetric('first_paint', navEntry.responseStart - navEntry.fetchStart, 'ms');
             }
           });
         });
@@ -236,8 +236,8 @@ export function getWebVitals(): Promise<{
           let clsValue = 0;
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            if ('hadRecentInput' in entry && !entry.hadRecentInput) {
-              clsValue += entry.value;
+            if ('hadRecentInput' in entry && !(entry as any).hadRecentInput) {
+              clsValue += (entry as any).value;
             }
           });
           vitals.cls = clsValue;
@@ -270,7 +270,7 @@ export function getWebVitals(): Promise<{
       // Get TTFB
       const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
       if (navigation) {
-        vitals.ttfb = navigation.responseStart - navigation.requestStart;
+        vitals.ttfb = navigation.responseStart - navigation.fetchStart;
       }
       checkComplete();
     } else {
