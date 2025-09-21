@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { Menu, Search, Bell, User, LogOut, Settings } from 'lucide-react';
 import {
   DropdownMenu,
@@ -90,6 +91,9 @@ export function Header({ isAuthenticated = false, userRole, userName, onSignOut 
 
         {/* Right Section */}
         <div className="flex items-center space-x-2">
+          {/* Theme Toggle */}
+          <ThemeToggle />
+          
           {/* Search Button - Hidden on mobile */}
           <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Search className="h-4 w-4" />
