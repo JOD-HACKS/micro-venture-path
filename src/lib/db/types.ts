@@ -70,7 +70,7 @@ export interface Project {
   is_college_verified: boolean;
   verified_by_college_id?: string;
   has_escrow: boolean;
-  status: 'draft' | 'active' | 'closed' | 'paused';
+  status: 'draft' | 'active' | 'closed' | 'paused' | 'completed';
   application_deadline: string;
   milestones: ProjectMilestone[];
   applications_count: number;

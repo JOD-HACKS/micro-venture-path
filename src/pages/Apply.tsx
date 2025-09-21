@@ -221,13 +221,13 @@ export default function Apply() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
       {/* Header */}
-      <div className="border-b bg-muted/30">
+      <div className="border-b bg-card/80 backdrop-blur-sm">
         <div className="container-mobile py-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={`/projects/${project.id}`} className="flex items-center text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+          <Button variant="ghost" size="sm" asChild className="group">
+            <Link to={`/projects/${project.id}`} className="flex items-center text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Back to Project
             </Link>
           </Button>
@@ -237,17 +237,22 @@ export default function Apply() {
       <div className="container-mobile py-8">
         <div className="max-w-2xl mx-auto">
           {/* Progress */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl font-bold">Apply for Project</h1>
+          <div className="mb-8 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                  Apply for Project
+                </h1>
+                <p className="text-muted-foreground mt-1">Complete your application in {totalSteps} simple steps</p>
+              </div>
               <div className="flex items-center space-x-2">
                 {isOnline ? (
-                  <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
+                  <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200 shadow-sm">
                     <Wifi className="w-3 h-3 mr-1" />
                     Online
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200">
+                  <Badge variant="secondary" className="bg-orange-50 text-orange-700 border-orange-200 shadow-sm animate-pulse">
                     <WifiOff className="w-3 h-3 mr-1" />
                     Offline
                   </Badge>
@@ -255,49 +260,116 @@ export default function Apply() {
               </div>
             </div>
             
-            <Progress value={(step / totalSteps) * 100} className="h-2" />
-            <p className="text-sm text-muted-foreground mt-2">
-              Step {step} of {totalSteps}
-            </p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Step {step} of {totalSteps}</span>
+                <span className="text-muted-foreground">{Math.round((step / totalSteps) * 100)}% Complete</span>
+              </div>
+              <Progress value={(step / totalSteps) * 100} className="h-3 transition-all duration-500" />
+              
+              {/* Step indicators */}
+              <div className="flex items-center justify-between mt-4">
+                {[1, 2, 3].map((stepNum) => (
+                  <div key={stepNum} className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                      stepNum < step 
+                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                        : stepNum === step 
+                        ? 'bg-primary/20 text-primary border-2 border-primary' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {stepNum < step ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        stepNum
+                      )}
+                    </div>
+                    <span className={`ml-2 text-sm hidden sm:inline ${
+                      stepNum === step ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    }`}>
+                      {stepNum === 1 && 'Skills Check'}
+                      {stepNum === 2 && 'Cover Letter'}
+                      {stepNum === 3 && 'Review & Submit'}
+                    </span>
+                    {stepNum < 3 && <div className="flex-1 h-px bg-border mx-4 hidden sm:block" />}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Project Summary */}
-          <Card className="mb-6">
-            <CardHeader>
+          <Card className="mb-6 card-enhanced border-primary/20">
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
+                  <div className="flex flex-wrap items-center gap-2 mb-3">
                     {project.is_college_verified && (
-                      <Badge className="bg-green-50 text-green-700 border-green-200">
+                      <Badge className="bg-green-50 text-green-700 border-green-200 shadow-sm">
                         <Shield className="w-3 h-3 mr-1" />
                         College Verified
                       </Badge>
                     )}
                     {project.is_micro_project && (
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 shadow-sm">
                         <Clock className="w-3 h-3 mr-1" />
                         Micro-Project
                       </Badge>
                     )}
+                    {project.has_escrow && (
+                      <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 shadow-sm">
+                        <Shield className="w-3 h-3 mr-1" />
+                        Escrow Protected
+                      </Badge>
+                    )}
                   </div>
-                  <CardTitle className="text-lg">{project.title}</CardTitle>
-                  <CardDescription className="mt-2">
-                    {project.description.slice(0, 150)}...
+                  <CardTitle className="text-xl md:text-2xl mb-3">{project.title}</CardTitle>
+                  <CardDescription className="text-base leading-relaxed">
+                    {project.description.slice(0, 200)}{project.description.length > 200 ? '...' : ''}
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center">
-                  <IndianRupee className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span className="font-medium">{formatCurrency(project.stipend_amount)}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center p-3 rounded-lg bg-green-50 border border-green-200">
+                  <IndianRupee className="w-5 h-5 mr-3 text-green-600" />
+                  <div>
+                    <p className="font-semibold text-green-900">{formatCurrency(project.stipend_amount)}</p>
+                    <p className="text-xs text-green-700">Stipend</p>
+                  </div>
                 </div>
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span>{project.duration_weeks} weeks</span>
+                <div className="flex items-center p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <Clock className="w-5 h-5 mr-3 text-blue-600" />
+                  <div>
+                    <p className="font-semibold text-blue-900">{project.duration_weeks} weeks</p>
+                    <p className="text-xs text-blue-700">Duration</p>
+                  </div>
+                </div>
+                <div className="flex items-center p-3 rounded-lg bg-purple-50 border border-purple-200">
+                  <FileText className="w-5 h-5 mr-3 text-purple-600" />
+                  <div>
+                    <p className="font-semibold text-purple-900">{new Date(project.application_deadline).toLocaleDateString()}</p>
+                    <p className="text-xs text-purple-700">Deadline</p>
+                  </div>
                 </div>
               </div>
+              
+              {project.skills_required.length > 0 && (
+                <div className="mt-4 pt-4 border-t">
+                  <p className="text-sm font-medium mb-2">Required Skills:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.skills_required.slice(0, 6).map((skill) => (
+                      <Badge key={skill} variant="secondary" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                    {project.skills_required.length > 6 && (
+                      <Badge variant="secondary" className="text-xs">+{project.skills_required.length - 6} more</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -349,13 +421,15 @@ export default function Apply() {
                       )}
                     />
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end pt-4">
                       <Button 
                         type="button" 
                         onClick={() => setStep(2)}
                         disabled={!form.watch('hasRequiredSkills')}
+                        className="min-w-[120px] button-primary"
                       >
                         Continue
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                       </Button>
                     </div>
                   </CardContent>
@@ -428,20 +502,24 @@ Best regards,
                       )}
                     />
 
-                    <div className="flex justify-between">
+                    <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4">
                       <Button 
                         type="button" 
                         variant="outline"
                         onClick={() => setStep(1)}
+                        className="min-w-[120px]"
                       >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
                         Back
                       </Button>
                       <Button 
                         type="button" 
                         onClick={() => setStep(3)}
                         disabled={!form.watch('coverLetter') || form.watch('coverLetter').length < 50}
+                        className="min-w-[120px] button-primary"
                       >
                         Continue
+                        <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
                       </Button>
                     </div>
                   </CardContent>
