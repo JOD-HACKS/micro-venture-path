@@ -2,7 +2,7 @@
 
 interface AnalyticsEvent {
   name: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   userId?: string;
   timestamp?: number;
 }
@@ -84,7 +84,7 @@ class Analytics {
     this.sendEvent(pageEvent);
   }
 
-  private async sendEvent(event: any) {
+  private async sendEvent(event: Record<string, unknown>) {
     try {
       // TODO: Replace with actual analytics endpoint
       console.log('Sending analytics event:', event);
@@ -169,7 +169,7 @@ class Analytics {
     });
   }
 
-  trackError(error: string, context?: Record<string, any>) {
+  trackError(error: string, context?: Record<string, unknown>) {
     this.track({
       name: 'error_occurred',
       properties: {

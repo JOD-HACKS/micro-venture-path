@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { User } from '@/lib/db/types';
 import { supabase } from '@/integrations/supabase/client';
 import { Session } from '@supabase/supabase-js';
@@ -47,87 +47,109 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Get initial session
-    const getSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Error getting session:', error);
-      } else {
-        setSession(session);
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        }
-      }
-      setLoading(false);
-    };
-
-    getSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.id);
-        setSession(session);
-        
-        if (session?.user) {
-          await loadUserProfile(session.user.id);
-        } else {
-          setUser(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = useCallback(async (userId: string) => {
     try {
-      // For now, create a mock user profile since Supabase tables aren't set up yet
-      // TODO: Replace with actual Supabase query when database is configured
-      const mockProfile = {
-        id: userId,
-        email: session?.user?.email || '',
-        name: session?.user?.user_metadata?.name || 'User',
-        phone: session?.user?.user_metadata?.phone || '',
-        role: (session?.user?.user_metadata?.role as any) || 'student',
-        avatar_url: session?.user?.user_metadata?.avatar_url,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        college_id: session?.user?.user_metadata?.college_id
-      };
+      // Try to get user profile from Supabase database
+      // Using type casting to handle incomplete database types
+      let userProfile = null;
+      
+      try {
+        const { data, error } = await (supabase as any)
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        if (!error) {
+          userProfile = data;
+        }
+      } catch (dbError) {
+        console.log('Database not ready, using auth metadata');
+      }
+
+      // If user doesn't exist in database or database is not ready, use auth metadata
+      if (!userProfile) {
+        const profileFromAuth = {
+          id: userId,
+          email: session?.user?.email || '',
+          name: session?.user?.user_metadata?.name || 'User',
+          phone: session?.user?.user_metadata?.phone || null,
+          role: (session?.user?.user_metadata?.role as 'student' | 'employer' | 'college_admin' | 'coordinator') || 'student',
+          avatar_url: session?.user?.user_metadata?.avatar_url || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          college_id: session?.user?.user_metadata?.college_id
+        };
+
+        // Try to create user in database if possible
+        try {
+          const { data: createdUser } = await (supabase as any)
+            .from('users')
+            .insert(profileFromAuth)
+            .select()
+            .single();
+          
+          if (createdUser) {
+            userProfile = createdUser;
+          }
+        } catch (createError) {
+          console.log('Could not create user in database, using auth metadata');
+          userProfile = profileFromAuth;
+        }
+      }
 
       setUser({
-        ...mockProfile,
+        ...userProfile,
         session
       });
     } catch (error) {
       console.error('Failed to load user profile:', error);
     }
-  };
+  }, [session]);
+
+  useEffect(() => {
+    // Hardcoded mock session for frontend demo - no real auth
+    console.log('Using mock authentication for frontend demo');
+    
+    // Set a mock user for demo purposes
+    const mockUser: AuthUser = {
+      id: 'demo-user-123',
+      email: 'demo@prashiskshan.com',
+      name: 'Demo Student',
+      phone: '+919876543210',
+      role: 'student',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      college_id: 'demo-college-123',
+      session: null
+    };
+    
+    setUser(mockUser);
+    setSession(null);
+    setLoading(false);
+    
+    // No subscription cleanup needed for mock auth
+  }, []);
 
   const signUp = async (data: SignUpData) => {
     try {
       setLoading(true);
       
-      // For now, simulate sign up since Supabase database isn't configured
-      // TODO: Replace with actual Supabase auth when database is set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Mock sign up for frontend demo
+      console.log('Mock sign up:', data);
       
       const mockUser: AuthUser = {
-        id: 'mock_' + Date.now(),
+        id: `mock-user-${Date.now()}`,
         email: data.email,
         name: data.name,
         phone: data.phone,
         role: data.role,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        college_id: data.collegeId
+        college_id: data.collegeId,
+        session: null
       };
-
+      
       setUser(mockUser);
       return { user: mockUser, error: null };
     } catch (error) {
@@ -141,20 +163,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
-      // For now, simulate sign in since Supabase database isn't configured
-      // TODO: Replace with actual Supabase auth when database is set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Mock sign in for frontend demo
+      console.log('Mock sign in:', email);
       
       const mockUser: AuthUser = {
-        id: 'mock_user_1',
+        id: 'demo-user-signin-123',
         email: email,
         name: 'Demo User',
-        phone: '+91 98765 43210',
+        phone: '+919876543210',
         role: 'student',
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        college_id: 'demo-college-123',
+        session: null
       };
-
+      
       setUser(mockUser);
       return { user: mockUser, error: null };
     } catch (error) {
@@ -168,8 +191,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
-      // For now, just clear local state
-      // TODO: Replace with actual Supabase auth when database is set up
+      // Mock sign out for frontend demo
+      console.log('Mock sign out');
+      
+      // Clear local state
       setUser(null);
       setSession(null);
     } catch (error) {
@@ -186,8 +211,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: new Error('No user logged in') };
       }
 
-      // For now, just update local state
-      // TODO: Replace with actual Supabase update when database is set up
+      // Mock profile update for frontend demo
+      console.log('Mock profile update:', data);
+
+      // Update local state
       setUser(prev => prev ? { ...prev, ...data, updated_at: new Date().toISOString() } : null);
       return { error: null };
     } catch (error) {
@@ -197,9 +224,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      // For now, simulate password reset
-      // TODO: Replace with actual Supabase auth when database is set up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Mock password reset for frontend demo
+      console.log('Mock password reset for:', email);
+      
       return { error: null };
     } catch (error) {
       return { error: error as Error };

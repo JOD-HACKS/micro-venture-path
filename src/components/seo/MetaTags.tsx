@@ -130,7 +130,14 @@ export const generateWebsiteSchema = () => ({
   }
 });
 
-export const generateJobPostingSchema = (project: any) => ({
+export const generateJobPostingSchema = (project: {
+  title: string;
+  description: string;
+  stipend_amount: number;
+  created_at: string;
+  application_deadline: string;
+  skills_required: string[];
+}) => ({
   "@context": "https://schema.org",
   "@type": "JobPosting",
   "title": project.title,

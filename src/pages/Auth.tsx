@@ -37,6 +37,7 @@ import {
   Chrome
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 import { mockColleges } from '@/lib/db/mock-data';
 
 const signInSchema = z.object({
@@ -64,6 +65,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -99,7 +101,7 @@ export default function Auth() {
     }
     
     if (roleParam && ['student', 'employer', 'college_admin', 'coordinator'].includes(roleParam)) {
-      signUpForm.setValue('role', roleParam as any);
+      signUpForm.setValue('role', roleParam as 'student' | 'employer' | 'college_admin' | 'coordinator');
     }
   }, [searchParams, signUpForm]);
 
@@ -108,22 +110,29 @@ export default function Auth() {
   const onSignIn = async (data: SignInForm) => {
     setLoading(true);
     try {
-      // TODO: Implement actual authentication
-      console.log('Sign in:', data);
+      const { user, error } = await signIn(data.email, data.password);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message || "Please check your credentials and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      toast({
-        title: "Welcome back!",
-        description: "You have been signed in successfully.",
-      });
-      
-      navigate('/dashboard');
+      if (user) {
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error) {
       toast({
         title: "Sign in failed",
-        description: "Please check your credentials and try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -134,22 +143,36 @@ export default function Auth() {
   const onSignUp = async (data: SignUpForm) => {
     setLoading(true);
     try {
-      // TODO: Implement actual registration
-      console.log('Sign up:', data);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Account created!",
-        description: "Welcome to Prashiskshan. Please check your email to verify your account.",
+      const { user, error } = await signUp({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        phone: data.phone,
+        role: data.role,
+        collegeId: data.collegeId
       });
       
-      navigate('/dashboard');
+      if (error) {
+        toast({
+          title: "Registration failed",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (user) {
+        toast({
+          title: "Account created!",
+          description: "Welcome to Prashiskshan. Please check your email to verify your account.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: "Something went wrong. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {

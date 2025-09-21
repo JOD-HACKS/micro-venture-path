@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { errorMonitoring } from '@/lib/error-monitoring';
 
 interface Props {
   children: ReactNode;
@@ -38,16 +39,18 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
     
-    // Log error to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
-      // TODO: Send to error monitoring service (Sentry, LogRocket, etc.)
-      console.error('Production Error:', {
-        error: error.message,
-        stack: error.stack,
-        componentStack: errorInfo.componentStack,
-        errorId: this.state.errorId
-      });
-    }
+    // Send to error monitoring service
+    errorMonitoring.captureError(error, {
+      componentStack: errorInfo.componentStack,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+      timestamp: Date.now(),
+      additionalData: {
+        errorBoundary: true,
+        errorId: this.state.errorId,
+        componentStack: errorInfo.componentStack
+      }
+    });
 
     this.props.onError?.(error, errorInfo);
   }

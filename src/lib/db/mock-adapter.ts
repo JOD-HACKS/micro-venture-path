@@ -14,6 +14,8 @@ import { mockColleges, mockProjects } from './mock-data';
 
 // TODO: Replace with actual Supabase integration
 export class MockDbAdapter {
+  private mockApplications: Application[] = [];
+  
   // Projects
   async getProjects(filters?: {
     skills?: string[];
@@ -79,19 +81,18 @@ export class MockDbAdapter {
       updated_at: new Date().toISOString()
     };
     
-    // TODO: Store in actual database
+    // Store in mock applications array
+    this.mockApplications.push(newApplication);
     console.log('Mock: Created application', newApplication);
     return newApplication;
   }
   
   async getApplicationsByStudent(studentId: string): Promise<Application[]> {
-    // TODO: Implement with actual data
-    return [];
+    return this.mockApplications.filter(app => app.student_id === studentId);
   }
   
   async getApplicationsByProject(projectId: string): Promise<Application[]> {
-    // TODO: Implement with actual data  
-    return [];
+    return this.mockApplications.filter(app => app.project_id === projectId);
   }
   
   // SMS Application handler (mock)
@@ -192,17 +193,129 @@ export class MockDbAdapter {
     
     // Store in IndexedDB for offline persistence
     if (typeof window !== 'undefined' && 'indexedDB' in window) {
-      // TODO: Implement IndexedDB storage
-      console.log('Mock: Queued application for offline', queuedApplication);
+      try {
+        await this.storeInIndexedDB(queuedApplication);
+        console.log('Application queued in IndexedDB:', queuedApplication);
+      } catch (error) {
+        console.error('Failed to store application in IndexedDB:', error);
+      }
     }
     
     return queuedApplication;
   }
   
   async syncQueuedApplications(): Promise<Application[]> {
-    // TODO: Sync queued applications from IndexedDB to server
-    console.log('Mock: Syncing queued applications');
-    return [];
+    try {
+      const queuedApps = await this.getQueuedApplicationsFromIndexedDB();
+      const syncedApplications: Application[] = [];
+      
+      for (const queuedApp of queuedApps) {
+        try {
+          // Try to submit the queued application
+          const application = await this.createApplication({
+            project_id: queuedApp.projectId,
+            student_id: queuedApp.studentId,
+            status: 'submitted',
+            cover_letter: queuedApp.coverLetter,
+            submitted_via: 'web',
+            is_queued: false
+          });
+          
+          // Remove from IndexedDB after successful sync
+          await this.removeFromIndexedDB(queuedApp.id);
+          syncedApplications.push(application);
+          
+          console.log('Synced queued application:', application.id);
+        } catch (error) {
+          console.error('Failed to sync application:', queuedApp.id, error);
+        }
+      }
+      
+      return syncedApplications;
+    } catch (error) {
+      console.error('Failed to sync queued applications:', error);
+      return [];
+    }
+  }
+
+  private async initializeIndexedDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('PrashikshanOffline', 1);
+      
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => resolve(request.result);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        
+        if (!db.objectStoreNames.contains('applicationQueue')) {
+          const store = db.createObjectStore('applicationQueue', { keyPath: 'id' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+          store.createIndex('projectId', 'projectId', { unique: false });
+        }
+      };
+    });
+  }
+
+  private async storeInIndexedDB(application: any): Promise<void> {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      return;
+    }
+    
+    try {
+      const db = await this.initializeIndexedDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['applicationQueue'], 'readwrite');
+        const store = transaction.objectStore('applicationQueue');
+        const request = store.add(application);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+    } catch (error) {
+      console.error('Failed to store in IndexedDB:', error);
+    }
+  }
+
+  private async getQueuedApplicationsFromIndexedDB(): Promise<any[]> {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      return [];
+    }
+    
+    try {
+      const db = await this.initializeIndexedDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['applicationQueue'], 'readonly');
+        const store = transaction.objectStore('applicationQueue');
+        const request = store.getAll();
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result || []);
+      });
+    } catch (error) {
+      console.error('Failed to get queued applications:', error);
+      return [];
+    }
+  }
+
+  private async removeFromIndexedDB(id: string): Promise<void> {
+    if (typeof window === 'undefined' || !('indexedDB' in window)) {
+      return;
+    }
+    
+    try {
+      const db = await this.initializeIndexedDB();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction(['applicationQueue'], 'readwrite');
+        const store = transaction.objectStore('applicationQueue');
+        const request = store.delete(id);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve();
+      });
+    } catch (error) {
+      console.error('Failed to remove from IndexedDB:', error);
+    }
   }
 }
 

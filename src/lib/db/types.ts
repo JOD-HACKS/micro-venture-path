@@ -134,6 +134,6 @@ export interface Notification {
   title: string;
   message: string;
   is_read: boolean;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
 }

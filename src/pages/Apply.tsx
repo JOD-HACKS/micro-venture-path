@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,6 +46,7 @@ import {
 import { db, type Project } from '@/lib/db';
 import { pwa } from '@/lib/pwa';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 const applicationSchema = z.object({
   coverLetter: z.string().min(50, 'Cover letter must be at least 50 characters').max(1000, 'Cover letter must be less than 1000 characters'),
@@ -60,6 +61,7 @@ export default function Apply() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -77,17 +79,7 @@ export default function Apply() {
     },
   });
 
-  useEffect(() => {
-    if (id) {
-      loadProject(id);
-    }
-    
-    // Listen for online/offline status
-    const cleanup = pwa.onOnlineStatusChange(setIsOnline);
-    return cleanup;
-  }, [id]);
-
-  const loadProject = async (projectId: string) => {
+  const loadProject = useCallback(async (projectId: string) => {
     try {
       const projectData = await db.getProject(projectId);
       setProject(projectData);
@@ -101,10 +93,28 @@ export default function Apply() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    if (id) {
+      loadProject(id);
+    }
+    
+    // Listen for online/offline status
+    const cleanup = pwa.onOnlineStatusChange(setIsOnline);
+    return cleanup;
+  }, [id, loadProject]);
 
   const onSubmit = async (data: ApplicationForm) => {
-    if (!project) return;
+    if (!project || !user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to submit an application.",
+        variant: "destructive",
+      });
+      navigate('/auth?mode=signin');
+      return;
+    }
 
     setSubmitting(true);
     
@@ -113,7 +123,7 @@ export default function Apply() {
         // Submit directly if online
         await db.createApplication({
           project_id: project.id,
-          student_id: 'current_user_id', // TODO: Get from auth context
+          student_id: user.id,
           status: 'submitted',
           cover_letter: data.coverLetter,
           submitted_via: 'web',
@@ -130,7 +140,7 @@ export default function Apply() {
         // Queue for offline submission
         const applicationId = await pwa.queueApplication({
           projectId: project.id,
-          studentId: 'current_user_id', // TODO: Get from auth context
+          studentId: user.id,
           coverLetter: data.coverLetter,
         });
 

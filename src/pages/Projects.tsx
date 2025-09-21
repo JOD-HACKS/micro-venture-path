@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -77,14 +77,6 @@ export default function Projects() {
     'API Integration', 'Database Design'
   ];
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [projects, filters]);
-
   const loadProjects = async () => {
     try {
       setError(null);
@@ -98,7 +90,7 @@ export default function Projects() {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...projects];
 
     // Search filter
@@ -177,7 +169,15 @@ export default function Projects() {
     // Save filters to localStorage (excluding search)
     const { search, ...filtersToSave } = filters;
     setSavedFilters(filtersToSave);
-  };
+  }, [projects, filters, trackSearch, setSavedFilters]);
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  useEffect(() => {
+    applyFilters();
+  }, [projects, filters, applyFilters]);
 
   const clearFilters = () => {
     const clearedFilters: ProjectFilters = {
@@ -358,7 +358,7 @@ export default function Projects() {
                   {/* Duration */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Duration</label>
-                    <Select value={filters.duration} onValueChange={(value: any) => setFilters(prev => ({ ...prev, duration: value }))}>
+                    <Select value={filters.duration} onValueChange={(value: 'all' | '1-2' | '3-4' | '5+') => setFilters(prev => ({ ...prev, duration: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -374,7 +374,7 @@ export default function Projects() {
                   {/* Stipend */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Stipend Range</label>
-                    <Select value={filters.stipend} onValueChange={(value: any) => setFilters(prev => ({ ...prev, stipend: value }))}>
+                    <Select value={filters.stipend} onValueChange={(value: 'all' | '0-5000' | '5000-15000' | '15000+') => setFilters(prev => ({ ...prev, stipend: value }))}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

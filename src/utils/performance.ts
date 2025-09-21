@@ -236,8 +236,8 @@ export function getWebVitals(): Promise<{
           let clsValue = 0;
           const entries = list.getEntries();
           entries.forEach((entry) => {
-            if ('hadRecentInput' in entry && !(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            if ('hadRecentInput' in entry && !(entry as unknown as { hadRecentInput?: boolean }).hadRecentInput) {
+              clsValue += (entry as unknown as { value: number }).value;
             }
           });
           vitals.cls = clsValue;

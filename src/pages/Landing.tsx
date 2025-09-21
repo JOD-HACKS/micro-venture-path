@@ -116,7 +116,7 @@ export default function Landing() {
             
             <div className="animate-slide-up">
               <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-8 leading-tight">
-                College-Verified <span className="text-primary bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Internships</span> for Every Student
+                College-Verified <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Internships</span> for Every Student
               </h1>
             </div>
             

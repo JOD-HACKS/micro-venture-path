@@ -88,7 +88,7 @@ export function generateId(): string {
 /**
  * Debounce function
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -157,7 +157,7 @@ export function isValidEmail(email: string): boolean {
  * Check if string is valid Indian phone number
  */
 export function isValidIndianPhone(phone: string): boolean {
-  const phoneRegex = /^[\+]?[91]?[6-9]\d{9}$/;
+  const phoneRegex = /^[+]?[91]?[6-9]\d{9}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 }
 
