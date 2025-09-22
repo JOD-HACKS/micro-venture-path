@@ -20,7 +20,7 @@ class Analytics {
   private sessionId: string;
 
   constructor() {
-    this.isEnabled = process.env.NODE_ENV === 'production';
+    this.isEnabled = import.meta.env.PROD === true;
     this.sessionId = this.generateSessionId();
     
     // Initialize analytics services

@@ -70,6 +70,7 @@ export default function Projects() {
     isMicroProject: savedFilters.isMicroProject || null,
     hasEscrow: savedFilters.hasEscrow || null,
   });
+  const [sortBy, setSortBy] = useState<'recent' | 'stipend-high' | 'stipend-low' | 'duration-short' | 'applications'>('recent');
 
   const popularSkills = [
     'React', 'JavaScript', 'Python', 'Node.js', 'UI/UX Design',
@@ -103,8 +104,6 @@ export default function Projects() {
           skill.toLowerCase().includes(searchLower)
         )
       );
-      
-      // Track search
       trackSearch(filters.search, filtered.length);
     }
 
@@ -155,21 +154,38 @@ export default function Projects() {
     if (filters.isVerified !== null) {
       filtered = filtered.filter(project => project.is_college_verified === filters.isVerified);
     }
-
     if (filters.isMicroProject !== null) {
       filtered = filtered.filter(project => project.is_micro_project === filters.isMicroProject);
     }
-
     if (filters.hasEscrow !== null) {
       filtered = filtered.filter(project => project.has_escrow === filters.hasEscrow);
     }
 
+    // Sorting
+    switch (sortBy) {
+      case 'stipend-high':
+        filtered.sort((a, b) => b.stipend_amount - a.stipend_amount);
+        break;
+      case 'stipend-low':
+        filtered.sort((a, b) => a.stipend_amount - b.stipend_amount);
+        break;
+      case 'duration-short':
+        filtered.sort((a, b) => a.duration_weeks - b.duration_weeks);
+        break;
+      case 'applications':
+        filtered.sort((a, b) => a.applications_count - b.applications_count);
+        break;
+      case 'recent':
+      default:
+        filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        break;
+    }
+
     setFilteredProjects(filtered);
-    
-    // Save filters to localStorage (excluding search)
+
     const { search, ...filtersToSave } = filters;
     setSavedFilters(filtersToSave);
-  }, [projects, filters, trackSearch, setSavedFilters]);
+  }, [projects, filters, trackSearch, setSavedFilters, sortBy]);
 
   useEffect(() => {
     loadProjects();
@@ -177,7 +193,7 @@ export default function Projects() {
 
   useEffect(() => {
     applyFilters();
-  }, [projects, filters, applyFilters]);
+  }, [projects, filters, sortBy, applyFilters]);
 
   const clearFilters = () => {
     const clearedFilters: ProjectFilters = {
@@ -467,8 +483,8 @@ export default function Projects() {
                   Showing {filteredProjects.length} of {projects.length} projects
                 </p>
                 
-                <Select defaultValue="recent">
-                  <SelectTrigger className="w-[180px] mt-2 sm:mt-0">
+                <Select value={sortBy} onValueChange={(value: 'recent' | 'stipend-high' | 'stipend-low' | 'duration-short' | 'applications') => setSortBy(value)}>
+                  <SelectTrigger className="w-[200px] mt-2 sm:mt-0">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>

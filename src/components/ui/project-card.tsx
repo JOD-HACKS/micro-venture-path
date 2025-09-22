@@ -195,14 +195,21 @@ export function ProjectCard({ project, showEmployer = true, className, variant =
         </div>
         
         <div className="flex items-center space-x-2 w-full">
-          <Button variant="outline" className="flex-1 group/btn" asChild>
-            <Link to={`/projects/${project.id}`}>
+          <Button 
+            variant="outline" 
+            className="flex-1 group/btn"
+            asChild
+          >
+            <Link to={`/projects/${project.id}`} className="flex items-center w-full h-full justify-center">
               <Briefcase className="w-4 h-4 mr-2" />
               View Details
             </Link>
           </Button>
-          <Button className="flex-1 btn-primary-enhanced group/btn" asChild>
-            <Link to={`/projects/${project.id}/apply`}>
+          <Button 
+            className="flex-1 btn-primary-enhanced group/btn"
+            asChild
+          >
+            <Link to={`/projects/${project.id}/apply`} className="flex items-center w-full h-full justify-center">
               Apply Now
               <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
             </Link>

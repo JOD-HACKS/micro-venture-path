@@ -27,89 +27,46 @@ import {
 import { ProjectCard } from '@/components/ui/project-card';
 import { mockProjects } from '@/lib/db/mock-data';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
-// Mock user data - in real app this would come from auth context
-const mockUser = {
-  id: '1',
-  name: 'Priya Sharma',
-  email: 'priya.sharma@example.com',
-  role: 'student' as const,
-  avatar: '',
-  college: 'Government Engineering College, Bharuch',
-  year: 3,
-  course: 'Computer Science Engineering',
-  skills: ['React', 'JavaScript', 'Python', 'UI/UX Design'],
-  completedProjects: 3,
-  rating: 4.8,
-  totalEarnings: 18500,
-  isCollegeVerified: true,
-  skillsVerified: ['React', 'JavaScript'],
-  joinedAt: '2024-01-15',
-};
-
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'application_update',
-    title: 'Application Approved!',
-    message: 'Your application for "Rural E-Commerce Mobile App" has been approved.',
-    time: '2 hours ago',
-    isRead: false,
-  },
-  {
-    id: '2',
-    type: 'skill_verification',
-    title: 'Skill Verified',
-    message: 'Your React skill has been verified successfully.',
-    time: '1 day ago',
-    isRead: false,
-  },
-  {
-    id: '3',
-    type: 'payment',
-    title: 'Payment Released',
-    message: '₹5,000 has been released for completed milestone.',
-    time: '3 days ago',
-    isRead: true,
-  },
-];
-
-const mockApplications = [
-  {
-    id: '1',
-    projectId: '1',
-    projectTitle: 'Rural E-Commerce Mobile App Development',
-    status: 'selected' as const,
-    appliedAt: '2024-09-18',
-    employer: 'TechCorp Solutions',
-    stipend: 5000,
-  },
-  {
-    id: '2',
-    projectId: '2', 
-    projectTitle: 'Smart Irrigation System Dashboard',
-    status: 'shortlisted' as const,
-    appliedAt: '2024-09-20',
-    employer: 'AgriTech Innovations',
-    stipend: 8000,
-  },
-  {
-    id: '3',
-    projectId: '8',
-    projectTitle: 'Digital Literacy Training Platform',
-    status: 'submitted' as const,
-    appliedAt: '2024-09-21',
-    employer: 'EduTech Foundation',
-    stipend: 18000,
-  },
-];
+// Frontend-only: use auth context for name, mock arrays for lists
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const [user] = useState(mockUser);
-  const [notifications] = useState(mockNotifications);
-  const [applications] = useState(mockApplications);
+  const { user } = useAuth();
   const [recommendedProjects, setRecommendedProjects] = useState(mockProjects.slice(0, 3));
+  const [loading] = useState(false);
+
+  // Real-looking hardcoded recent applications
+  const applications = [
+    {
+      id: 'app_10021',
+      projectId: 'p1',
+      projectTitle: 'Farmer Marketplace Lite (Mobile App)',
+      status: 'selected' as const,
+      appliedAt: '2025-09-12',
+      employer: 'KrishiKart Labs',
+      stipend: 6000,
+    },
+    {
+      id: 'app_10037',
+      projectId: 'p2',
+      projectTitle: 'Smart Irrigation Dashboard (Web)',
+      status: 'shortlisted' as const,
+      appliedAt: '2025-09-15',
+      employer: 'AquaSense AgriTech',
+      stipend: 9000,
+    },
+    {
+      id: 'app_10054',
+      projectId: 'p8',
+      projectTitle: 'Digital Literacy Platform (Local Languages)',
+      status: 'submitted' as const,
+      appliedAt: '2025-09-18',
+      employer: 'GramShiksha Foundation',
+      stipend: 19000,
+    },
+  ];
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -125,17 +82,19 @@ export default function Dashboard() {
     let completed = 0;
     const total = 7;
     
-    if (user.name) completed++;
-    if (user.email) completed++;
-    if (user.skills.length > 0) completed++;
-    if (user.college) completed++;
-    if (user.course) completed++;
-    if (user.avatar) completed++;
-    if (user.skillsVerified.length > 0) completed++;
+    if (user?.name) completed++;
+    if (user?.email) completed++;
+    // Skills/profile fields can be extended when profile module is ready
+    if (user?.college_id) completed++;
     
     return Math.round((completed / total) * 100);
   };
 
+  const notifications = [
+    { id: 'n1', title: 'Application Approved', message: 'Your application was approved.', time: '2h', isRead: false },
+    { id: 'n2', title: 'New Project Added', message: 'A new project matching your skills is live.', time: '1d', isRead: true },
+    { id: 'n3', title: 'Skill Verified', message: 'Your React skill has been verified.', time: '3d', isRead: true },
+  ];
   const unreadNotifications = notifications.filter(n => !n.isRead).length;
 
   return (
@@ -148,7 +107,7 @@ export default function Dashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-foreground">
-                  Welcome back, {user.name.split(' ')[0]}! 👋
+                  {user ? `Welcome back, ${(user.name || 'User').split(' ')[0]}! 👋` : 'Welcome!'}
                 </h1>
                 <p className="text-muted-foreground mt-1">
                   Here's what's happening with your projects today.
@@ -157,10 +116,10 @@ export default function Dashboard() {
               
               <div className="flex items-center space-x-2 mt-4 sm:mt-0">
                 <Button asChild>
-                  <Link to="/projects">
+                  <a href="/#/projects">
                     <Plus className="w-4 h-4 mr-2" />
                     Browse Projects
-                  </Link>
+                  </a>
                 </Button>
               </div>
             </div>
@@ -174,9 +133,7 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{applications.length}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {applications.filter(a => a.status === 'selected').length} selected
-                  </p>
+                  <p className="text-xs text-muted-foreground">Active and historical</p>
                 </CardContent>
               </Card>
 
@@ -186,10 +143,8 @@ export default function Dashboard() {
                   <CheckCircle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{user.completedProjects}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Projects finished
-                  </p>
+                  <div className="text-2xl font-bold">0</div>
+                  <p className="text-xs text-muted-foreground">Projects finished</p>
                 </CardContent>
               </Card>
 
@@ -199,10 +154,8 @@ export default function Dashboard() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">₹{user.totalEarnings.toLocaleString()}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Total earned
-                  </p>
+                  <div className="text-2xl font-bold">₹0</div>
+                  <p className="text-xs text-muted-foreground">Total earned</p>
                 </CardContent>
               </Card>
 
@@ -212,10 +165,8 @@ export default function Dashboard() {
                   <Star className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{user.rating}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Average rating
-                  </p>
+                  <div className="text-2xl font-bold">—</div>
+                  <p className="text-xs text-muted-foreground">Average rating</p>
                 </CardContent>
               </Card>
             </div>
@@ -233,37 +184,37 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {applications.map((application) => (
-                    <div key={application.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex-1">
-                        <h4 className="font-medium line-clamp-1">{application.projectTitle}</h4>
-                        <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
-                          <span>Applied {new Date(application.appliedAt).toLocaleDateString()}</span>
-                          <span>•</span>
-                          <span>{application.employer}</span>
-                          <span>•</span>
-                          <span>₹{application.stipend.toLocaleString()}</span>
+                  {applications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No applications yet.</p>
+                  ) : (
+                    applications.map((application) => (
+                      <div key={application.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="flex-1">
+                          <h4 className="font-medium line-clamp-1">{application.projectTitle}</h4>
+                          <div className="flex items-center space-x-4 mt-1 text-sm text-muted-foreground">
+                            <span>Applied {new Date(application.appliedAt).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{application.employer}</span>
+                            <span>•</span>
+                            <span>₹{application.stipend.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Badge className={getStatusColor(application.status)}>
+                            {application.status.replace('_', ' ')}
+                          </Badge>
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={`/#/applications/${application.id}`}>View</a>
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Badge className={getStatusColor(application.status)}>
-                          {application.status.replace('_', ' ')}
-                        </Badge>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/applications/${application.id}`}>
-                            View
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 
                 <div className="mt-4 pt-4 border-t">
                   <Button variant="outline" className="w-full" asChild>
-                    <Link to="/applications">
-                      View All Applications
-                    </Link>
+                    <a href="/#/applications">View All Applications</a>
                   </Button>
                 </div>
               </CardContent>
@@ -289,9 +240,7 @@ export default function Dashboard() {
                 
                 <div className="mt-6">
                   <Button variant="outline" className="w-full" asChild>
-                    <Link to="/projects">
-                      Browse All Projects
-                    </Link>
+                    <a href="/#/projects">Browse All Projects</a>
                   </Button>
                 </div>
               </CardContent>
@@ -305,19 +254,16 @@ export default function Dashboard() {
               <CardHeader>
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    <AvatarImage src={user?.avatar_url || ''} alt={user?.name || 'User'} />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {user.name.split(' ').map(n => n[0]).join('')}
+                      {(user?.name || 'U').split(' ').map(n => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold truncate">{user.name}</h3>
-                      {user.isCollegeVerified && (
-                        <Shield className="w-4 h-4 text-green-600" />
-                      )}
+                      <h3 className="font-semibold truncate">{user?.name || 'User'}</h3>
                     </div>
-                    <p className="text-sm text-muted-foreground truncate">{user.college}</p>
+                    <p className="text-sm text-muted-foreground truncate">{user?.college_id ? `College ID: ${user.college_id}` : 'No college set'}</p>
                   </div>
                 </div>
               </CardHeader>
@@ -336,24 +282,22 @@ export default function Dashboard() {
                   <div className="flex items-center text-sm">
                     <GraduationCap className="w-4 h-4 mr-2 text-muted-foreground" />
                     <span className="text-muted-foreground">Year:</span>
-                    <span className="ml-auto font-medium">{user.year}</span>
+                    <span className="ml-auto font-medium">—</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <BookOpen className="w-4 h-4 mr-2 text-muted-foreground" />
                     <span className="text-muted-foreground truncate">Course:</span>
-                    <span className="ml-auto font-medium">{user.course}</span>
+                    <span className="ml-auto font-medium">—</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <Star className="w-4 h-4 mr-2 text-muted-foreground" />
                     <span className="text-muted-foreground">Rating:</span>
-                    <span className="ml-auto font-medium">{user.rating}/5.0</span>
+                    <span className="ml-auto font-medium">—</span>
                   </div>
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link to="/profile">
-                    Edit Profile
-                  </Link>
+                  <a href="/#/profile">Edit Profile</a>
                 </Button>
               </CardContent>
             </Card>
@@ -363,37 +307,23 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-lg">Skills</CardTitle>
                 <CardDescription>
-                  {user.skillsVerified.length} of {user.skills.length} verified
+                  No skills added
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  {user.skills.map((skill) => {
-                    const isVerified = user.skillsVerified.includes(skill);
-                    return (
-                      <Badge 
-                        key={skill} 
-                        variant={isVerified ? "default" : "secondary"}
-                        className={isVerified ? "bg-green-100 text-green-800 border-green-200" : ""}
-                      >
-                        {skill}
-                        {isVerified && <CheckCircle className="w-3 h-3 ml-1" />}
-                      </Badge>
-                    );
-                  })}
+                  {/* No skills to render in mock-only auth */}
                 </div>
                 
                 <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link to="/skills">
-                    Verify More Skills
-                  </Link>
+                  <a href="/#/skills">Verify More Skills</a>
                 </Button>
               </CardContent>
             </Card>
 
             {/* Notifications */}
             <Card>
-              <CardHeader>
+                <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Bell className="w-5 h-5 mr-2" />
@@ -432,9 +362,7 @@ export default function Dashboard() {
                 </div>
                 
                 <Button variant="outline" size="sm" className="w-full mt-4" asChild>
-                  <Link to="/notifications">
-                    View All Notifications
-                  </Link>
+                  <a href="/#/notifications">View All Notifications</a>
                 </Button>
               </CardContent>
             </Card>

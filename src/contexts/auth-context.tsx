@@ -171,7 +171,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: email,
         name: 'Demo User',
         phone: '+919876543210',
-        role: 'student',
+        role: 'student', // default; UI can set role during sign up
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         college_id: 'demo-college-123',

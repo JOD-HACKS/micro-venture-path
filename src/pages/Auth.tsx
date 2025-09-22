@@ -126,8 +126,18 @@ export default function Auth() {
           title: "Welcome back!",
           description: "You have been signed in successfully.",
         });
-        
-        navigate('/dashboard');
+
+        // Role-based redirect (hash routes for demo)
+        const r = user.role;
+        if (r === 'employer') {
+          window.location.replace('/#/employer/dashboard');
+        } else if (r === 'college_admin') {
+          window.location.replace('/#/admin/placement-cell');
+        } else if (r === 'coordinator') {
+          window.location.replace('/#/coordinator/verify');
+        } else {
+          window.location.replace('/#/dashboard');
+        }
       }
     } catch (error) {
       toast({
@@ -166,8 +176,18 @@ export default function Auth() {
           title: "Account created!",
           description: "Welcome to Prashiskshan. Please check your email to verify your account.",
         });
-        
-        navigate('/dashboard');
+
+        // Role-based redirect (hash routes for demo)
+        const r = user.role;
+        if (r === 'employer') {
+          window.location.replace('/#/employer/dashboard');
+        } else if (r === 'college_admin') {
+          window.location.replace('/#/admin/placement-cell');
+        } else if (r === 'coordinator') {
+          window.location.replace('/#/coordinator/verify');
+        } else {
+          window.location.replace('/#/dashboard');
+        }
       }
     } catch (error) {
       toast({

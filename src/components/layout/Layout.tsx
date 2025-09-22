@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useAuth } from '@/contexts/auth-context';
 import { 
   Menu, 
   X, 
@@ -24,18 +25,19 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user } = useAuth();
 
-  // Mock user state - in real app this would come from auth context
-  const isLoggedIn = false;
-  const userRole = 'student'; // 'student' | 'employer' | 'college_admin' | 'coordinator'
+  const isLoggedIn = !!user;
+  const userRole = (user?.role as 'student' | 'employer' | 'college_admin' | 'coordinator') || 'student';
 
   const navigation = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Projects', href: '/projects', icon: Briefcase },
     ...(isLoggedIn ? [
-      { name: 'Dashboard', href: '/dashboard', icon: User },
-      { name: 'Applications', href: '/applications', icon: Search },
+      { name: 'Dashboard', href: userRole === 'student' ? '/dashboard' : userRole === 'employer' ? '/employer/dashboard' : userRole === 'college_admin' ? '/admin/placement-cell' : '/coordinator/verify', icon: User },
+      ...(userRole === 'student' ? [{ name: 'Applications', href: '/applications', icon: Search }] : []),
     ] : []),
   ];
 
@@ -73,10 +75,11 @@ export function Layout({ children }: LayoutProps) {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container-mobile flex h-16 items-center">
           {/* Logo */}
-          <Link 
-            to="/" 
+          <button 
+            type="button"
             className="flex items-center space-x-2 mr-6 focus-brand rounded-md px-2 py-1"
-            onClick={closeMobileMenu}
+            onClick={() => { closeMobileMenu(); navigate('/'); }}
+            aria-label="Go to Home"
           >
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
               प्र
@@ -84,23 +87,39 @@ export function Layout({ children }: LayoutProps) {
             <span className="font-bold text-xl text-foreground hidden sm:inline-block">
               Prashiskshan
             </span>
-          </Link>
+          </button>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1 flex-1">
             {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors focus-brand ${
-                  isActiveRoute(item.href)
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                }`}
-              >
-                <item.icon className="w-4 h-4 mr-2" />
-                {item.name}
-              </Link>
+              item.name === 'Home' ? (
+                <button
+                  key={item.name}
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors focus-brand ${
+                    isActiveRoute(item.href)
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 mr-2" />
+                  {item.name}
+                </button>
+              ) : (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors focus-brand ${
+                    isActiveRoute(item.href)
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 mr-2" />
+                  {item.name}
+                </Link>
+              )
             ))}
             
             {currentRoleNav.map((item) => (
@@ -168,10 +187,11 @@ export function Layout({ children }: LayoutProps) {
               <SheetContent side="right" className="w-80">
                 <div className="flex flex-col space-y-4 mt-8">
                   {/* Logo in mobile menu */}
-                  <Link 
-                    to="/" 
+                  <button 
+                    type="button"
                     className="flex items-center space-x-2 px-2 py-1 -mx-2 rounded-md focus-brand"
-                    onClick={closeMobileMenu}
+                    onClick={() => { closeMobileMenu(); navigate('/'); }}
+                    aria-label="Go to Home"
                   >
                     <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
                       प्र
@@ -179,25 +199,41 @@ export function Layout({ children }: LayoutProps) {
                     <span className="font-bold text-xl text-foreground">
                       Prashiskshan
                     </span>
-                  </Link>
+                  </button>
 
                   <div className="border-t pt-4">
                     {/* Mobile Navigation */}
                     <nav className="space-y-1">
                       {navigation.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.href}
-                          onClick={closeMobileMenu}
-                          className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors focus-brand ${
-                            isActiveRoute(item.href)
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
-                          }`}
-                        >
-                          <item.icon className="w-5 h-5 mr-3" />
-                          {item.name}
-                        </Link>
+                        item.name === 'Home' ? (
+                          <button
+                            key={item.name}
+                            type="button"
+                            onClick={() => { closeMobileMenu(); navigate('/'); }}
+                            className={`flex items-center w-full text-left px-3 py-3 rounded-md text-sm font-medium transition-colors focus-brand ${
+                              isActiveRoute(item.href)
+                                ? 'bg-accent text-accent-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                            }`}
+                          >
+                            <item.icon className="w-5 h-5 mr-3" />
+                            {item.name}
+                          </button>
+                        ) : (
+                          <Link
+                            key={item.name}
+                            to={item.href}
+                            onClick={closeMobileMenu}
+                            className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors focus-brand ${
+                              isActiveRoute(item.href)
+                                ? 'bg-accent text-accent-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                            }`}
+                          >
+                            <item.icon className="w-5 h-5 mr-3" />
+                            {item.name}
+                          </Link>
+                        )
                       ))}
                       
                       {currentRoleNav.map((item) => (
