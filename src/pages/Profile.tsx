@@ -103,14 +103,14 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container-mobile py-8 max-w-2xl space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Profile</h1>
             <p className="text-sm text-muted-foreground">
               Manage your account details and contact information.
             </p>
           </div>
-          <Badge variant="secondary">{roleLabels[user.role]}</Badge>
+          <Badge variant="secondary" className="w-fit">{roleLabels[user.role]}</Badge>
         </div>
 
         <Card>
@@ -160,13 +160,14 @@ export default function Profile() {
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 justify-between">
-                <Button type="submit" disabled={saving}>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
                   {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
                 <Button
                   type="button"
                   variant="ghost"
+                  className="w-full sm:w-auto"
                   onClick={handleSignOut}
                   disabled={signingOut}
                 >

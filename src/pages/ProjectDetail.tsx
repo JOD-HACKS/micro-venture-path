@@ -276,7 +276,7 @@ export default function ProjectDetail() {
                         {index + 1}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
                           <h4 className="font-medium">{milestone.title}</h4>
                           <Badge variant="outline" className="text-xs">
                             {milestone.payment_percentage}% payment

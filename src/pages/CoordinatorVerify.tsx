@@ -23,17 +23,17 @@ export default function CoordinatorVerify() {
               }, {
                 id: 'qv3', student: 'Rohit Kumar', task: 'Localization strings for literacy platform', submittedAt: '2025-09-18'
               }].map(item => (
-                <div key={item.id} className="p-4 border rounded-lg flex items-center justify-between">
-                  <div className="min-w-0">
+                <div key={item.id} className="p-4 border rounded-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{item.student}</div>
                     <div className="text-sm text-muted-foreground truncate">{item.task}</div>
                     <div className="text-xs text-muted-foreground mt-1">Submitted {new Date(item.submittedAt).toLocaleDateString()}</div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-green-700 border-green-200">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto text-green-700 border-green-200">
                       <Check className="w-4 h-4 mr-1" /> Approve
                     </Button>
-                    <Button size="sm" variant="outline" className="text-red-700 border-red-200">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-700 border-red-200">
                       <X className="w-4 h-4 mr-1" /> Reject
                     </Button>
                   </div>
@@ -46,5 +46,4 @@ export default function CoordinatorVerify() {
     </div>
   );
 }
-
 

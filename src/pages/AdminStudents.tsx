@@ -23,8 +23,8 @@ export default function AdminStudents() {
               }, {
                 id: 'stu3', name: 'Rohit Kumar', college: 'NIT Raipur', year: 2, skills: ['Vue', 'Node.js']
               }].map(s => (
-                <div key={s.id} className="p-4 border rounded-lg flex items-center justify-between">
-                  <div className="min-w-0">
+                <div key={s.id} className="p-4 border rounded-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium truncate">{s.name}</div>
                     <div className="text-sm text-muted-foreground truncate">{s.college} • Year {s.year}</div>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -33,11 +33,11 @@ export default function AdminStudents() {
                       ))}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="text-green-700 border-green-200">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto text-green-700 border-green-200">
                       <CheckCircle className="w-4 h-4 mr-1" /> Verify
                     </Button>
-                    <Button size="sm" variant="outline" className="text-red-700 border-red-200">
+                    <Button size="sm" variant="outline" className="w-full sm:w-auto text-red-700 border-red-200">
                       <XCircle className="w-4 h-4 mr-1" /> Reject
                     </Button>
                   </div>
@@ -50,5 +50,4 @@ export default function AdminStudents() {
     </div>
   );
 }
-
 

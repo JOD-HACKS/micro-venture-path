@@ -312,7 +312,7 @@ export default function Projects() {
                 </p>
               </div>
               
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <OfflineIndicator />
                 <Badge variant="secondary" className="bg-green-50 text-green-700">
                   <Shield className="w-3 h-3 mr-1" />
@@ -333,7 +333,7 @@ export default function Projects() {
             <div className="lg:w-80">
               <Card className="sticky top-24">
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <CardTitle className="text-lg flex items-center">
                       <SlidersHorizontal className="w-5 h-5 mr-2" />
                       Filters

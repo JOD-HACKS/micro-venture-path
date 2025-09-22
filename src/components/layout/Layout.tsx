@@ -210,16 +210,6 @@ export function Layout({ children }: LayoutProps) {
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 px-0 sm:hidden"
-                  onClick={() => { void handleSignOut(); }}
-                  disabled={signingOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span className="sr-only">Sign Out</span>
-                </Button>
               </>
             )}
 

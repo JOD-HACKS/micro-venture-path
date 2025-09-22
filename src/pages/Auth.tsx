@@ -326,7 +326,7 @@ export default function Auth() {
                     )}
                   />
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <Button 
                       variant="link" 
                       size="sm" 

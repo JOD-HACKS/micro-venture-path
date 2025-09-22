@@ -48,13 +48,13 @@ export default function Applications() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container-mobile py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div className="space-y-2 sm:space-y-1">
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Your Applications</h1>
             <p className="text-muted-foreground">Track the status of your internship applications</p>
           </div>
-          <Button asChild>
-            <Link to="/projects">Browse Projects</Link>
+          <Button asChild className="w-full sm:w-auto">
+            <Link to="/projects" className="flex items-center justify-center">Browse Projects</Link>
           </Button>
         </div>
 
@@ -87,11 +87,11 @@ export default function Applications() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
                       <Badge className={getStatusColor(application.status)}>
                         {application.status}
                       </Badge>
-                      <Button variant="outline" size="sm" asChild>
+                      <Button variant="outline" size="sm" asChild className="w-full sm:w-auto">
                         <Link to={`/applications/${application.id}`}>View</Link>
                       </Button>
                     </div>

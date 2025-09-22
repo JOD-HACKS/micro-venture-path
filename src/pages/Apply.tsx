@@ -271,14 +271,14 @@ export default function Apply() {
             </div>
             
             <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
                 <span className="font-medium">Step {step} of {totalSteps}</span>
                 <span className="text-muted-foreground">{Math.round((step / totalSteps) * 100)}% Complete</span>
               </div>
               <Progress value={(step / totalSteps) * 100} className="h-3 transition-all duration-500" />
               
               {/* Step indicators */}
-              <div className="flex items-center justify-between mt-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-4">
                 {[1, 2, 3].map((stepNum) => (
                   <div key={stepNum} className="flex items-center">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
