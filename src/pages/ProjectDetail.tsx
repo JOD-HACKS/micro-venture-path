@@ -22,12 +22,16 @@ import {
 } from 'lucide-react';
 import { db, type Project } from '@/lib/db';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/auth-context';
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+  const isStudent = user?.role === 'student';
 
   useEffect(() => {
     if (id) {
@@ -69,7 +73,25 @@ export default function ProjectDetail() {
 
   const simulateSMSApply = async () => {
     if (!project) return;
-    
+
+    if (!isLoggedIn) {
+      toast({
+        title: 'Sign in required',
+        description: 'Create a student account or sign in to submit applications.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isStudent) {
+      toast({
+        title: 'Student access needed',
+        description: 'Only student accounts can submit project applications.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       // Mock SMS application
       await db.createApplicationFromSMS({
@@ -295,11 +317,28 @@ export default function ProjectDetail() {
               <CardContent className="space-y-4">
                 {!isExpired ? (
                   <>
-                    <Button size="lg" className="w-full" asChild>
-                      <Link to={`/projects/${project.id}/apply`}>
-                        Apply Now
-                      </Link>
-                    </Button>
+                    {isStudent ? (
+                      <Button size="lg" className="w-full" asChild>
+                        <Link to={`/projects/${project.id}/apply`}>
+                          Apply Now
+                        </Link>
+                      </Button>
+                    ) : !isLoggedIn ? (
+                      <Button size="lg" className="w-full" asChild>
+                        <Link to={`/auth?mode=signin&redirect=${encodeURIComponent(`/projects/${project.id}/apply`)}`}>
+                          Sign in to Apply
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="lg" 
+                        className="w-full whitespace-normal text-center leading-tight py-3 h-auto" 
+                        variant="secondary" 
+                        disabled
+                      >
+                        Student Account Required
+                      </Button>
+                    )}
                     
                     <div className="text-center">
                       <span className="text-sm text-muted-foreground">or</span>
@@ -328,6 +367,8 @@ export default function ProjectDetail() {
                           size="sm" 
                           onClick={simulateSMSApply}
                           className="flex-1 bg-blue-600 hover:bg-blue-700"
+                          disabled={!isStudent}
+                          title={!isStudent ? 'Only student accounts can submit applications' : undefined}
                         >
                           Test SMS Apply
                         </Button>

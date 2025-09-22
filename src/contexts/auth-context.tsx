@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
-import { User } from '@/lib/db/types';
-import { supabase } from '@/integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import type { User, UserRole } from '@/lib/db/types';
 
 interface AuthUser extends User {
-  session?: Session;
-  college_id?: string; // Additional field for convenience
+  session?: Session | null;
+  college_id?: string;
+}
+
+interface StoredUser extends Omit<AuthUser, 'session'> {
+  password: string;
 }
 
 interface AuthContextType {
@@ -24,9 +27,126 @@ interface SignUpData {
   password: string;
   name: string;
   phone: string;
-  role: 'student' | 'employer' | 'college_admin' | 'coordinator';
+  role: UserRole;
   collegeId?: string;
 }
+
+const USERS_STORAGE_KEY = 'prashiskshan.users';
+const SESSION_STORAGE_KEY = 'prashiskshan.session';
+const isBrowser = typeof window !== 'undefined';
+
+const roleHomeRoute: Record<UserRole, string> = {
+  student: '/dashboard',
+  employer: '/employer/dashboard',
+  college_admin: '/admin/placement-cell',
+  coordinator: '/coordinator/verify',
+};
+
+export const ROLE_HOME_ROUTE = roleHomeRoute;
+
+const DEMO_USERS: StoredUser[] = [
+  {
+    id: 'demo-student-001',
+    email: 'student@gmail.com',
+    name: 'Demo Student',
+    phone: '+911234567890',
+    role: 'student',
+    avatar_url: undefined,
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    college_id: 'demo-college-123',
+    password: 'demo1234',
+  },
+  {
+    id: 'demo-coordinator-001',
+    email: 'coordinator@gmail.com',
+    name: 'Demo Coordinator',
+    phone: '+911234567891',
+    role: 'coordinator',
+    avatar_url: undefined,
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    college_id: undefined,
+    password: 'demo1234',
+  },
+  {
+    id: 'demo-employer-001',
+    email: 'employer@gmail.com',
+    name: 'Demo Employer',
+    phone: '+911234567892',
+    role: 'employer',
+    avatar_url: undefined,
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    college_id: undefined,
+    password: 'demo1234',
+  },
+  {
+    id: 'demo-admin-001',
+    email: 'collegeadmin@gmail.com',
+    name: 'Demo College Admin',
+    phone: '+911234567893',
+    role: 'college_admin',
+    avatar_url: undefined,
+    created_at: '2024-01-01T00:00:00.000Z',
+    updated_at: '2024-01-01T00:00:00.000Z',
+    college_id: undefined,
+    password: 'demo1234',
+  },
+];
+
+const stripPassword = (user: StoredUser): AuthUser => {
+  const { password: _password, ...rest } = user;
+  return { ...rest, session: null };
+};
+
+const getStoredUsers = (): StoredUser[] => {
+  if (!isBrowser) return [];
+  try {
+    const raw = window.localStorage.getItem(USERS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error('Failed to parse stored users', error);
+    return [];
+  }
+};
+
+const setStoredUsers = (users: StoredUser[]) => {
+  if (!isBrowser) return;
+  window.localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+};
+
+const getStoredSession = (): string | null => {
+  if (!isBrowser) return null;
+  try {
+    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { userId?: string } | null;
+    return parsed?.userId ?? null;
+  } catch (error) {
+    console.error('Failed to parse stored session', error);
+    return null;
+  }
+};
+
+const setStoredSession = (userId: string) => {
+  if (!isBrowser) return;
+  window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({ userId }));
+};
+
+const clearStoredSession = () => {
+  if (!isBrowser) return;
+  window.localStorage.removeItem(SESSION_STORAGE_KEY);
+};
+
+const generateUserId = () => {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID();
+  }
+  return `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -47,111 +167,68 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserProfile = useCallback(async (userId: string) => {
-    try {
-      // Try to get user profile from Supabase database
-      // Using type casting to handle incomplete database types
-      let userProfile = null;
-      
-      try {
-        const { data, error } = await (supabase as any)
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        
-        if (!error) {
-          userProfile = data;
-        }
-      } catch (dbError) {
-        console.log('Database not ready, using auth metadata');
-      }
-
-      // If user doesn't exist in database or database is not ready, use auth metadata
-      if (!userProfile) {
-        const profileFromAuth = {
-          id: userId,
-          email: session?.user?.email || '',
-          name: session?.user?.user_metadata?.name || 'User',
-          phone: session?.user?.user_metadata?.phone || null,
-          role: (session?.user?.user_metadata?.role as 'student' | 'employer' | 'college_admin' | 'coordinator') || 'student',
-          avatar_url: session?.user?.user_metadata?.avatar_url || null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          college_id: session?.user?.user_metadata?.college_id
-        };
-
-        // Try to create user in database if possible
-        try {
-          const { data: createdUser } = await (supabase as any)
-            .from('users')
-            .insert(profileFromAuth)
-            .select()
-            .single();
-          
-          if (createdUser) {
-            userProfile = createdUser;
-          }
-        } catch (createError) {
-          console.log('Could not create user in database, using auth metadata');
-          userProfile = profileFromAuth;
-        }
-      }
-
-      setUser({
-        ...userProfile,
-        session
-      });
-    } catch (error) {
-      console.error('Failed to load user profile:', error);
-    }
-  }, [session]);
-
   useEffect(() => {
-    // Hardcoded mock session for frontend demo - no real auth
-    console.log('Using mock authentication for frontend demo');
-    
-    // Set a mock user for demo purposes
-    const mockUser: AuthUser = {
-      id: 'demo-user-123',
-      email: 'demo@prashiskshan.com',
-      name: 'Demo Student',
-      phone: '+919876543210',
-      role: 'student',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      college_id: 'demo-college-123',
-      session: null
-    };
-    
-    setUser(mockUser);
+    if (!isBrowser) {
+      setLoading(false);
+      return;
+    }
+
+    let storedUsers = getStoredUsers();
+    const existingEmails = new Set(storedUsers.map(u => u.email.toLowerCase()));
+    const demoUsersToAdd = DEMO_USERS.filter(demo => !existingEmails.has(demo.email.toLowerCase()));
+
+    if (demoUsersToAdd.length > 0) {
+      storedUsers = [...storedUsers, ...demoUsersToAdd];
+      setStoredUsers(storedUsers);
+      console.info('Seeded demo accounts for quick testing.');
+    }
+
+    const sessionUserId = getStoredSession();
+    if (sessionUserId) {
+      const existing = storedUsers.find(stored => stored.id === sessionUserId);
+      if (existing) {
+        setUser(stripPassword(existing));
+      } else {
+        clearStoredSession();
+      }
+    }
+
     setSession(null);
     setLoading(false);
-    
-    // No subscription cleanup needed for mock auth
   }, []);
 
   const signUp = async (data: SignUpData) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Mock sign up for frontend demo
-      console.log('Mock sign up:', data);
-      
-      const mockUser: AuthUser = {
-        id: `mock-user-${Date.now()}`,
-        email: data.email,
-        name: data.name,
-        phone: data.phone,
+      const email = data.email.trim().toLowerCase();
+      const users = getStoredUsers();
+
+      const existing = users.find(u => u.email.toLowerCase() === email);
+      if (existing) {
+        return { user: null, error: new Error('An account with this email already exists.') };
+      }
+
+      const timestamp = new Date().toISOString();
+      const newUser: StoredUser = {
+        id: generateUserId(),
+        email,
+        name: data.name.trim(),
+        phone: data.phone.trim(),
         role: data.role,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        college_id: data.collegeId,
-        session: null
+        avatar_url: undefined,
+        created_at: timestamp,
+        updated_at: timestamp,
+        college_id: data.collegeId?.trim() || undefined,
+        password: data.password,
       };
-      
-      setUser(mockUser);
-      return { user: mockUser, error: null };
+
+      const updatedUsers = [...users, newUser];
+      setStoredUsers(updatedUsers);
+      setStoredSession(newUser.id);
+
+      const authUser = stripPassword(newUser);
+      setUser(authUser);
+      return { user: authUser, error: null };
     } catch (error) {
       return { user: null, error: error as Error };
     } finally {
@@ -160,26 +237,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signIn = async (email: string, password: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Mock sign in for frontend demo
-      console.log('Mock sign in:', email);
-      
-      const mockUser: AuthUser = {
-        id: 'demo-user-signin-123',
-        email: email,
-        name: 'Demo User',
-        phone: '+919876543210',
-        role: 'student', // default; UI can set role during sign up
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        college_id: 'demo-college-123',
-        session: null
-      };
-      
-      setUser(mockUser);
-      return { user: mockUser, error: null };
+      const normalizedEmail = email.trim().toLowerCase();
+      const users = getStoredUsers();
+      const existing = users.find(u => u.email.toLowerCase() === normalizedEmail);
+
+      if (!existing || existing.password !== password) {
+        return { user: null, error: new Error('Invalid email or password.') };
+      }
+
+      setStoredSession(existing.id);
+      const authUser = stripPassword(existing);
+      setUser(authUser);
+      return { user: authUser, error: null };
     } catch (error) {
       return { user: null, error: error as Error };
     } finally {
@@ -190,11 +261,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signOut = async () => {
     try {
       setLoading(true);
-      
-      // Mock sign out for frontend demo
-      console.log('Mock sign out');
-      
-      // Clear local state
+      clearStoredSession();
       setUser(null);
       setSession(null);
     } catch (error) {
@@ -211,11 +278,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { error: new Error('No user logged in') };
       }
 
-      // Mock profile update for frontend demo
-      console.log('Mock profile update:', data);
+      const users = getStoredUsers();
+      const index = users.findIndex(stored => stored.id === user.id);
 
-      // Update local state
-      setUser(prev => prev ? { ...prev, ...data, updated_at: new Date().toISOString() } : null);
+      if (index === -1) {
+        return { error: new Error('User profile not found') };
+      }
+
+      const { session: _session, ...rest } = data;
+      const updatedUser: StoredUser = {
+        ...users[index],
+        ...rest,
+        updated_at: new Date().toISOString(),
+        password: users[index].password,
+      };
+
+      users[index] = updatedUser;
+      setStoredUsers(users);
+      setUser(stripPassword(updatedUser));
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -224,9 +304,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (email: string) => {
     try {
-      // Mock password reset for frontend demo
-      console.log('Mock password reset for:', email);
-      
+      const users = getStoredUsers();
+      const exists = users.some(u => u.email.toLowerCase() === email.trim().toLowerCase());
+      if (!exists) {
+        return { error: new Error('No account found with that email.') };
+      }
+
+      console.info(`Password reset requested for ${email}. Implement email flow when backend is available.`);
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -241,7 +325,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     updateProfile,
-    resetPassword
+    resetPassword,
   };
 
   return (

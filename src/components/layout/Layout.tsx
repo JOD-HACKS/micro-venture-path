@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/contexts/auth-context';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Menu, 
-  X, 
   Shield, 
   Briefcase, 
   GraduationCap, 
@@ -16,7 +16,8 @@ import {
   Search,
   Bell,
   User,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -27,7 +28,9 @@ export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { user } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+  const { toast } = useToast();
+  const { user, signOut } = useAuth();
 
   const isLoggedIn = !!user;
   const userRole = (user?.role as 'student' | 'employer' | 'college_admin' | 'coordinator') || 'student';
@@ -68,6 +71,32 @@ export function Layout({ children }: LayoutProps) {
   };
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const handleSignOut = async (closeMenu = false) => {
+    if (signingOut) return;
+
+    try {
+      setSigningOut(true);
+      await signOut();
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.',
+      });
+      if (closeMenu) {
+        closeMobileMenu();
+      }
+      navigate('/auth?mode=signin');
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      toast({
+        title: 'Sign out failed',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -164,12 +193,34 @@ export function Layout({ children }: LayoutProps) {
                 </Button>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" className="h-9 w-9 px-0" asChild>
-                <Link to="/profile">
-                  <User className="h-4 w-4" />
-                  <span className="sr-only">Profile</span>
-                </Link>
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" className="h-9 w-9 px-0" asChild>
+                  <Link to="/profile">
+                    <User className="h-4 w-4" />
+                    <span className="sr-only">Profile</span>
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:inline-flex items-center"
+                  onClick={() => { void handleSignOut(); }}
+                  disabled={signingOut}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 px-0 sm:hidden"
+                  onClick={() => { void handleSignOut(); }}
+                  disabled={signingOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="sr-only">Sign Out</span>
+                </Button>
+              </>
             )}
 
             {/* Mobile menu trigger */}
@@ -254,7 +305,7 @@ export function Layout({ children }: LayoutProps) {
                     </nav>
 
                     {/* Mobile Auth buttons */}
-                    {!isLoggedIn && (
+                    {!isLoggedIn ? (
                       <div className="mt-6 pt-4 border-t space-y-2">
                         <Button variant="ghost" className="w-full justify-start" asChild>
                           <Link to="/auth?mode=signin" onClick={closeMobileMenu}>
@@ -265,6 +316,18 @@ export function Layout({ children }: LayoutProps) {
                           <Link to="/auth?mode=signup" onClick={closeMobileMenu}>
                             Get Started
                           </Link>
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="mt-6 pt-4 border-t space-y-2">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          onClick={() => { void handleSignOut(true); }}
+                          disabled={signingOut}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Sign Out
                         </Button>
                       </div>
                     )}

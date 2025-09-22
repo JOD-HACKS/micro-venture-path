@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Project } from '@/lib/db/types';
+import { useAuth } from '@/contexts/auth-context';
 
 interface ProjectCardProps {
   project: Project;
@@ -27,6 +28,12 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, showEmployer = true, className, variant = 'default' }: ProjectCardProps) {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+  const isStudent = user?.role === 'student';
+  const applyPath = `/projects/${project.id}/apply`;
+  const signInPath = `/auth?mode=signin&redirect=${encodeURIComponent(applyPath)}`;
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -205,15 +212,36 @@ export function ProjectCard({ project, showEmployer = true, className, variant =
               View Details
             </Link>
           </Button>
-          <Button 
-            className="flex-1 btn-primary-enhanced group/btn"
-            asChild
-          >
-            <Link to={`/projects/${project.id}/apply`} className="flex items-center w-full h-full justify-center">
-              Apply Now
-              <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
-            </Link>
-          </Button>
+          {isStudent ? (
+            <Button 
+              className="flex-1 btn-primary-enhanced group/btn"
+              asChild
+            >
+              <Link to={applyPath} className="flex items-center w-full h-full justify-center">
+                Apply Now
+                <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
+              </Link>
+            </Button>
+          ) : !isLoggedIn ? (
+            <Button 
+              className="flex-1 btn-primary-enhanced group/btn"
+              asChild
+            >
+              <Link to={signInPath} className="flex items-center w-full h-full justify-center">
+                Sign in to Apply
+                <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-0.5 transition-transform" />
+              </Link>
+            </Button>
+          ) : (
+            <Button 
+              className="flex-1 whitespace-normal text-center leading-tight py-2 h-auto" 
+              variant="secondary"
+              disabled
+              title="Only student accounts can apply to projects"
+            >
+              Student Account Required
+            </Button>
+          )}
         </div>
       </CardFooter>
     </Card>

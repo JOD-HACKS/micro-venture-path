@@ -37,7 +37,7 @@ import {
   Chrome
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/auth-context';
+import { useAuth, ROLE_HOME_ROUTE } from '@/contexts/auth-context';
 import { mockColleges } from '@/lib/db/mock-data';
 
 const signInSchema = z.object({
@@ -65,7 +65,7 @@ export default function Auth() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -105,13 +105,22 @@ export default function Auth() {
     }
   }, [searchParams, signUpForm]);
 
+  const redirectParam = searchParams.get('redirect');
+
+  useEffect(() => {
+    if (user) {
+      const fallback = redirectParam || ROLE_HOME_ROUTE[user.role];
+      navigate(fallback, { replace: true });
+    }
+  }, [user, redirectParam, navigate]);
+
   const selectedRole = signUpForm.watch('role');
 
   const onSignIn = async (data: SignInForm) => {
     setLoading(true);
     try {
-      const { user, error } = await signIn(data.email, data.password);
-      
+      const { user: signedInUser, error } = await signIn(data.email, data.password);
+
       if (error) {
         toast({
           title: "Sign in failed",
@@ -120,24 +129,15 @@ export default function Auth() {
         });
         return;
       }
-      
-      if (user) {
+
+      if (signedInUser) {
         toast({
           title: "Welcome back!",
           description: "You have been signed in successfully.",
         });
 
-        // Role-based redirect (hash routes for demo)
-        const r = user.role;
-        if (r === 'employer') {
-          window.location.replace('/#/employer/dashboard');
-        } else if (r === 'college_admin') {
-          window.location.replace('/#/admin/placement-cell');
-        } else if (r === 'coordinator') {
-          window.location.replace('/#/coordinator/verify');
-        } else {
-          window.location.replace('/#/dashboard');
-        }
+        const target = redirectParam || ROLE_HOME_ROUTE[signedInUser.role];
+        navigate(target, { replace: true });
       }
     } catch (error) {
       toast({
@@ -153,7 +153,7 @@ export default function Auth() {
   const onSignUp = async (data: SignUpForm) => {
     setLoading(true);
     try {
-      const { user, error } = await signUp({
+      const { user: createdUser, error } = await signUp({
         email: data.email,
         password: data.password,
         name: data.name,
@@ -161,7 +161,7 @@ export default function Auth() {
         role: data.role,
         collegeId: data.collegeId
       });
-      
+
       if (error) {
         toast({
           title: "Registration failed",
@@ -170,24 +170,15 @@ export default function Auth() {
         });
         return;
       }
-      
-      if (user) {
+
+      if (createdUser) {
         toast({
           title: "Account created!",
           description: "Welcome to Prashiskshan. Please check your email to verify your account.",
         });
 
-        // Role-based redirect (hash routes for demo)
-        const r = user.role;
-        if (r === 'employer') {
-          window.location.replace('/#/employer/dashboard');
-        } else if (r === 'college_admin') {
-          window.location.replace('/#/admin/placement-cell');
-        } else if (r === 'coordinator') {
-          window.location.replace('/#/coordinator/verify');
-        } else {
-          window.location.replace('/#/dashboard');
-        }
+        const target = redirectParam || ROLE_HOME_ROUTE[createdUser.role];
+        navigate(target, { replace: true });
       }
     } catch (error) {
       toast({
@@ -251,11 +242,11 @@ export default function Auth() {
           <CardContent className="space-y-6">
             {/* Social Sign In */}
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="w-full" disabled={loading}>
+              <Button variant="outline" className="w-full" disabled={loading || authLoading}>
                 <Github className="w-4 h-4 mr-2" />
                 GitHub
               </Button>
-              <Button variant="outline" className="w-full" disabled={loading}>
+              <Button variant="outline" className="w-full" disabled={loading || authLoading}>
                 <Chrome className="w-4 h-4 mr-2" />
                 Google
               </Button>
@@ -290,7 +281,7 @@ export default function Auth() {
                               type="email" 
                               placeholder="Enter your email"
                               className="pl-10"
-                              disabled={loading}
+                              disabled={loading || authLoading}
                             />
                           </div>
                         </FormControl>
@@ -312,7 +303,7 @@ export default function Auth() {
                               type={showPassword ? "text" : "password"}
                               placeholder="Enter your password"
                               className="pr-10"
-                              disabled={loading}
+                              disabled={loading || authLoading}
                             />
                             <Button
                               type="button"
@@ -320,7 +311,7 @@ export default function Auth() {
                               size="sm"
                               className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                               onClick={() => setShowPassword(!showPassword)}
-                              disabled={loading}
+                              disabled={loading || authLoading}
                             >
                               {showPassword ? (
                                 <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -346,8 +337,8 @@ export default function Auth() {
                     </Button>
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? 'Signing in...' : 'Sign In'}
+                  <Button type="submit" className="w-full" disabled={loading || authLoading}>
+                    {loading || authLoading ? 'Signing in...' : 'Sign In'}
                   </Button>
                 </form>
               </Form>
@@ -444,7 +435,7 @@ export default function Auth() {
                                   {...field} 
                                   placeholder="Enter your full name"
                                   className="pl-10"
-                                  disabled={loading}
+                                  disabled={loading || authLoading}
                                 />
                               </div>
                             </FormControl>
@@ -467,7 +458,7 @@ export default function Auth() {
                                   type="email" 
                                   placeholder="Enter your email"
                                   className="pl-10"
-                                  disabled={loading}
+                                  disabled={loading || authLoading}
                                 />
                               </div>
                             </FormControl>
@@ -490,7 +481,7 @@ export default function Auth() {
                                   type="tel" 
                                   placeholder="+91 98765 43210"
                                   className="pl-10"
-                                  disabled={loading}
+                                  disabled={loading || authLoading}
                                 />
                               </div>
                             </FormControl>
@@ -539,7 +530,7 @@ export default function Auth() {
                                   type={showPassword ? "text" : "password"}
                                   placeholder="Create a password"
                                   className="pr-10"
-                                  disabled={loading}
+                                  disabled={loading || authLoading}
                                 />
                                 <Button
                                   type="button"
@@ -547,7 +538,7 @@ export default function Auth() {
                                   size="sm"
                                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                                   onClick={() => setShowPassword(!showPassword)}
-                                  disabled={loading}
+                                  disabled={loading || authLoading}
                                 >
                                   {showPassword ? (
                                     <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -573,7 +564,7 @@ export default function Auth() {
                                 {...field} 
                                 type="password"
                                 placeholder="Confirm your password"
-                                disabled={loading}
+                                disabled={loading || authLoading}
                               />
                             </FormControl>
                             <FormMessage />
@@ -587,12 +578,12 @@ export default function Auth() {
                           variant="outline" 
                           className="flex-1"
                           onClick={() => setStep(1)}
-                          disabled={loading}
+                          disabled={loading || authLoading}
                         >
                           Back
                         </Button>
-                        <Button type="submit" className="flex-1" disabled={loading}>
-                          {loading ? 'Creating account...' : 'Create Account'}
+                        <Button type="submit" className="flex-1" disabled={loading || authLoading}>
+                          {loading || authLoading ? 'Creating account...' : 'Create Account'}
                         </Button>
                       </div>
                     </>

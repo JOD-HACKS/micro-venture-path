@@ -33,6 +33,7 @@ import EmployerProjectNew from "./pages/EmployerProjectNew";
 import AdminPlacementCell from "./pages/AdminPlacementCell";
 import AdminStudents from "./pages/AdminStudents";
 import CoordinatorVerify from "./pages/CoordinatorVerify";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,14 +67,63 @@ const App = () => (
                   <Route path="/" element={<Landing />} />
                   <Route path="/projects" element={<Projects />} />
                   <Route path="/projects/:id" element={<ProjectDetail />} />
-                  <Route path="/projects/:id/apply" element={<Apply />} />
-                  <Route path="/applications" element={<Applications />} />
-                  <Route path="/applications/:id" element={<ApplicationDetail />} />
+                  <Route
+                    path="/projects/:id/apply"
+                    element={
+                      <ProtectedRoute allowedRoles={["student"]}>
+                        <Apply />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/applications"
+                    element={
+                      <ProtectedRoute allowedRoles={["student"]}>
+                        <Applications />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/applications/:id"
+                    element={
+                      <ProtectedRoute allowedRoles={["student"]}>
+                        <ApplicationDetail />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/auth" element={<Auth />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/skills" element={<Skills />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["student"]}>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notifications"
+                    element={
+                      <ProtectedRoute>
+                        <Notifications />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/skills"
+                    element={
+                      <ProtectedRoute allowedRoles={["student"]}>
+                        <Skills />
+                      </ProtectedRoute>
+                    }
+                  />
                   <Route path="/help" element={<Help />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/sms-guide" element={<SmsGuide />} />
@@ -81,11 +131,46 @@ const App = () => (
                   <Route path="/terms" element={<Terms />} />
                   <Route path="/cookies" element={<Cookies />} />
                   <Route path="/accessibility" element={<Accessibility />} />
-                  <Route path="/employer/dashboard" element={<EmployerDashboard />} />
-                  <Route path="/employer/projects/new" element={<EmployerProjectNew />} />
-                  <Route path="/admin/placement-cell" element={<AdminPlacementCell />} />
-                  <Route path="/admin/students" element={<AdminStudents />} />
-                  <Route path="/coordinator/verify" element={<CoordinatorVerify />} />
+                  <Route
+                    path="/employer/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={["employer"]}>
+                        <EmployerDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/employer/projects/new"
+                    element={
+                      <ProtectedRoute allowedRoles={["employer"]}>
+                        <EmployerProjectNew />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/placement-cell"
+                    element={
+                      <ProtectedRoute allowedRoles={["college_admin"]}>
+                        <AdminPlacementCell />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin/students"
+                    element={
+                      <ProtectedRoute allowedRoles={["college_admin"]}>
+                        <AdminStudents />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/coordinator/verify"
+                    element={
+                      <ProtectedRoute allowedRoles={["coordinator"]}>
+                        <CoordinatorVerify />
+                      </ProtectedRoute>
+                    }
+                  />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
